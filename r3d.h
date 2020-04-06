@@ -79,17 +79,13 @@ R3DDEF void BeginDefferedMode(GBuffer gbuffer);                // Begin drawing 
 R3DDEF void EndDefferedMode();                                 // End drawing of deffered mode
 
 #endif // R3D_H
-#define R3D_IMPLEMENTATION 1
 
 // Raylib-3D Implementation
 #if defined(R3D_IMPLEMENTATION)
 #include <rlgl.h>
 
 #if !defined(R3D_GLAD)
-    #define GLAD_REALLOC R3D_ALLOC
-    #define GLAD_FREE R3D_FREE
-    #define GLAD_IMPLEMENTATION
-
+    //#define GLAD_IMPLEMENTATION
     #include "glad.h"
 #endif
 

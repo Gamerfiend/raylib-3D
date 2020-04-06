@@ -2,7 +2,7 @@
 An extension library for the amazing raylib library, that adds better support for 3D. The Deffered Rendering is based on the work done by @TheLumaio, but moved to a single header format with functions and data structures renamed to better follow the raylib code style.
 
 Current Implementation Plan:
-- [ ] Deffered Rendering
+- [x] Deffered Rendering
 - [ ] Model, Material, Animation loading through Assimp
 - [ ] Skeletal Animation playback
 
