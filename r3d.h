@@ -16,9 +16,9 @@
 *   #define R3D_GLAD
 *       Define if loading OpenGL
 *
-*   #define R3D_MALLOC() // Used only for GLAD loading
-*   #define R3D_CALLOC() // Used only for GLAD loading
-*   #define R3D_FREE()   // Used only for GLAD loading
+*   #define R3D_MALLOC()
+*   #define R3D_CALLOC()
+*   #define R3D_FREE()
 *       You can define your own malloc/free implementation replacing stdlib.h malloc()/free() functions.
 *
 *   Use the following code to compile:
@@ -73,10 +73,11 @@ typedef struct GBuffer {
     Texture depth;
 } GBuffer;
 
-R3DDEF GBuffer LoadGBuffer(int width, int height);             // Loads a new GBuffer with given screen constraints
-R3DDEF void UnloadGBuffer(GBuffer gbuffer);                    // Unload an existing GBuffer 
-R3DDEF void BeginDefferedMode(GBuffer gbuffer);                // Begin drawing in deffered mode (using GBuffer) NOTE: Should be called after BeginDrawing, before BeginMode3D
-R3DDEF void EndDefferedMode();                                 // End drawing of deffered mode
+R3DDEF GBuffer LoadGBuffer(int width, int height);                // Loads a new GBuffer with given screen constraints
+R3DDEF void UnloadGBuffer(GBuffer gbuffer);                       // Unload an existing GBuffer 
+R3DDEF void BeginDefferedMode(GBuffer gbuffer);                   // Begin drawing in deffered mode (using GBuffer) NOTE: Should be called after BeginDrawing, before BeginMode3D
+R3DDEF void EndDefferedMode();                                    // End drawing of deffered mode
+R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i); // Sets and binds a texture to active in GL context
 
 #endif // R3D_H
 
@@ -120,22 +121,22 @@ R3DDEF GBuffer LoadGBuffer(int width, int height)
     glGenTextures(1, &gbuffer.position.id);
     glBindTexture(GL_TEXTURE_2D, gbuffer.position.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_FILTER_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gbuffer.position.id, 0);
     
     glGenTextures(1, &gbuffer.normal.id);
     glBindTexture(GL_TEXTURE_2D, gbuffer.normal.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_FILTER_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gbuffer.normal.id, 0);
     
     glGenTextures(1, &gbuffer.color.id);
     glBindTexture(GL_TEXTURE_2D, gbuffer.color.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_FILTER_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gbuffer.color.id, 0);
     
     unsigned int buffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
@@ -150,10 +151,10 @@ R3DDEF GBuffer LoadGBuffer(int width, int height)
     glGenTextures(1, &gbuffer.depth.id);
     glBindTexture(GL_TEXTURE_2D, gbuffer.depth.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_WRAP_S, RL_WRAP_CLAMP);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_WRAP_T, RL_WRAP_CLAMP);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_FILTER_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gbuffer.depth.id, 0);
     
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -177,10 +178,10 @@ R3DDEF GBuffer LoadGBuffer(int width, int height)
 
 R3DDEF void UnloadGBuffer(GBuffer gbuffer)
 {
-    glDeleteFramebuffers(1, &gbuffer.id);
-    glDeleteTextures(1, &gbuffer.color.id);
-    glDeleteTextures(1, &gbuffer.normal.id);
-    glDeleteTextures(1, &gbuffer.position.id);
+    rlDeleteBuffers(gbuffer.id);
+    rlDeleteTextures(gbuffer.color.id);
+    rlDeleteTextures(gbuffer.normal.id);
+    rlDeleteTextures(gbuffer.position.id);
 }
 
 R3DDEF void BeginDefferedMode(GBuffer gbuffer)
@@ -219,5 +220,11 @@ R3DDEF void EndDefferedMode()
     rlMatrixMode(RL_MODELVIEW);
     rlLoadIdentity();
 } 
+
+R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i) 
+{
+    glActiveTexture(GL_TEXTURE0 + i);
+    glBindTexture(GL_TEXTURE_2D, texture.id);
+}
 
 #endif
