@@ -13,6 +13,11 @@
 *       If not defined, the library is in header only mode and can be included in other headers
 *       or source files without problems. But only ONE file should hold the implementation.
 *
+*   #define R3D_ASSIMP_SUPPORT
+*       Defining this before the implementation adds support for Model/Material/Animation loading 
+*       via the library assimp. NOTE: assimp is NOT included, is an external dependency that must
+*       first install.
+*
 *   #define R3D_GLAD
 *       Define if loading OpenGL
 *
@@ -79,6 +84,10 @@ R3DDEF void BeginDefferedMode(GBuffer gbuffer);                   // Begin drawi
 R3DDEF void EndDefferedMode();                                    // End drawing of deffered mode
 R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i); // Sets and binds a texture to active in GL context
 
+#if defined(R3D_ASSIMP_SUPPORT)
+    R3DDEF Model LoadModelAdvanced(const char* filename);         // Loads a model from ASSIMP (External Dependency)
+#endif // R3D_ASSIMP_SUPPORT
+
 #endif // R3D_H
 
 // Raylib-3D Implementation
@@ -90,6 +99,7 @@ R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i); // Sets and bi
     #include "glad.h"
 #endif
 
+#pragma region GBUFFER
 R3DDEF GBuffer LoadGBuffer(int width, int height)
 {
     GBuffer gbuffer;
@@ -226,5 +236,28 @@ R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i)
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, texture.id);
 }
+#pragma endregion
 
-#endif
+//#define R3D_ASSIMP_SUPPORT
+
+#pragma region ASSIMP
+#if defined(R3D_ASSIMP_SUPPORT)
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+R3DDEF Model LoadModelAdvanced(const char* filename)
+{
+    Model model = {0};
+
+    const struct aiScene* aiModel = aiImportFile(filename, aiProcess_CalcTangentSpace | aiProcess_Triangulate);
+
+    model.meshCount = aiModel->mNumMeshes;
+    
+    aiReleaseImport(aiModel);
+    return model;
+}
+#pragma endregion
+
+#endif // R3D_ASSIMP_SUPPORT
+#endif // R3D_IMPLEMENTATION

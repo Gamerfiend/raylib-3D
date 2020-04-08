@@ -10,7 +10,7 @@
 int main()
 {
     // Basic raylib window creation
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Example - Models Deffered Basic");
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Example - Models Deffered Advanced");
     SetTargetFPS(60);
 
     // Setup our camera

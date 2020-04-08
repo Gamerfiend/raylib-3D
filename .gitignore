@@ -1,2 +1,4 @@
 .vscode/
 examples/a.exe
+assimp-vc141-mtd.dll
+assimp-vc141-mtd.lib
