@@ -94,9 +94,9 @@ typedef struct GBuffer {
 
 R3DDEF GBuffer LoadGBuffer(int width, int height);                // Loads a new GBuffer with given screen constraints
 R3DDEF void UnloadGBuffer(GBuffer gbuffer);                       // Unload an existing GBuffer 
-R3DDEF void BeginDefferedMode(GBuffer gbuffer);                   // Begin drawing in deffered mode (using GBuffer) NOTE: Should be called after BeginDrawing, before BeginMode3D
-R3DDEF void EndDefferedMode();                                    // End drawing of deffered mode
-R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i); // Sets and binds a texture to active in GL context
+R3DDEF void BeginDeferedMode(GBuffer gbuffer);                   // Begin drawing in Defered mode (using GBuffer) NOTE: Should be called after BeginDrawing, before BeginMode3D
+R3DDEF void EndDeferedMode();                                    // End drawing of Defered mode
+R3DDEF void SetDeferedModeShaderTexture(Texture texture, int i); // Sets and binds a texture to active in GL context
 
 #if defined(R3D_ASSIMP_SUPPORT)
     R3DDEF Model LoadModelAdvanced(const char* filename);         // Loads a model from ASSIMP (External Dependency)
@@ -209,7 +209,7 @@ R3DDEF void UnloadGBuffer(GBuffer gbuffer)
     rlDeleteTextures(gbuffer.position.id);
 }
 
-R3DDEF void BeginDefferedMode(GBuffer gbuffer)
+R3DDEF void BeginDeferedMode(GBuffer gbuffer)
 {
     rlglDraw();
     rlEnableRenderTexture(gbuffer.id);
@@ -228,7 +228,7 @@ R3DDEF void BeginDefferedMode(GBuffer gbuffer)
     glDisable(GL_BLEND);
 }
 
-R3DDEF void EndDefferedMode()
+R3DDEF void EndDeferedMode()
 {
     glEnable(GL_BLEND);
     rlglDraw();
@@ -246,7 +246,7 @@ R3DDEF void EndDefferedMode()
     rlLoadIdentity();
 } 
 
-R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i) 
+R3DDEF void SetDeferedModeShaderTexture(Texture texture, int i) 
 {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, texture.id);
@@ -254,7 +254,6 @@ R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i)
 #pragma endregion
 
 #pragma region ASSIMP
-#define R3D_ASSIMP_SUPPORT
 #if defined(R3D_ASSIMP_SUPPORT)
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
@@ -267,9 +266,19 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
     const struct aiScene* aiModel = aiImportFile(filename, aiProcess_CalcTangentSpace | aiProcess_Triangulate);
 
     model.transform = MatrixIdentity();
+    
+    
+    // Load Materials
+    model.materialCount = aiModel->mNumMaterials;
+    model.materials = R3D_CALLOC(model.materialCount, sizeof(Material));
+
+    for(int i = 0; i < model.materialCount; i++) {
+
+    }
+    
+    //Load Meshes for Model
     model.meshCount = aiModel->mNumMeshes;
     model.meshes = R3D_CALLOC(model.meshCount, sizeof(Mesh));
-
     for(int i = 0; i < model.meshCount; i++) {
         Mesh newMesh = {0};
         const struct aiMesh* importMesh = aiModel->mMeshes[i];
@@ -338,8 +347,8 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
             for(int j = 0; j < newMesh.vertexCount * 4; j += 4) {
                 newMesh.tangents[j] = importMesh->mTangents[tangentCounter].x;
                 newMesh.tangents[j + 1] = importMesh->mTangents[tangentCounter].y;
-                newMesh.tangents[j + 3] = importMesh->mTangents[tangentCounter].z;
-                newMesh.tangents[j + 4] = 0;
+                newMesh.tangents[j + 2] = importMesh->mTangents[tangentCounter].z;
+                newMesh.tangents[j + 3] = 0;
                 tangentCounter++;
             }
         }
@@ -350,8 +359,8 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
             for(int j = 0; j < newMesh.vertexCount * 4; j += 4) {
                 newMesh.colors[j] = importMesh->mColors[0][colorCounter].r;
                 newMesh.colors[j + 1] = importMesh->mColors[0][colorCounter].g;
-                newMesh.colors[j + 3] = importMesh->mColors[0][colorCounter].b;
-                newMesh.colors[j + 4] = importMesh->mColors[0][colorCounter].a;
+                newMesh.colors[j + 2] = importMesh->mColors[0][colorCounter].b;
+                newMesh.colors[j + 3] = importMesh->mColors[0][colorCounter].a;
                 colorCounter++;
             }
         }
@@ -365,7 +374,7 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
     for(int i = 0; i < model.meshCount; i++) {
         rlLoadMesh(&model.meshes[i], false);
     }
-    
+
     aiReleaseImport(aiModel);
     return model;
 }
