@@ -21,6 +21,7 @@
 *   #define R3D_GLAD
 *       Define if loading OpenGL
 *
+*   #define R3D_CUSTOM_ALLOCATORS
 *   #define R3D_MALLOC()
 *   #define R3D_CALLOC()
 *   #define R3D_FREE()
@@ -66,6 +67,19 @@
 
 #include <raylib.h>
 
+#ifndef R3D_CUSTOM_ALLOCATORS
+#include <stdlib.h>
+#ifndef R3D_MALLOC 
+    #define R3D_MALLOC malloc
+#endif
+#ifndef R3D_CALLOC 
+    #define R3D_CALLOC calloc
+#endif
+#ifndef R3D_FREE 
+    #define R3D_FREE free
+#endif
+#endif
+
 // GBuffer implementation based on @TheLumaio
 // GBuffer stores multiple render targets for a single render pass
 typedef struct GBuffer {
@@ -86,6 +100,7 @@ R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i); // Sets and bi
 
 #if defined(R3D_ASSIMP_SUPPORT)
     R3DDEF Model LoadModelAdvanced(const char* filename);         // Loads a model from ASSIMP (External Dependency)
+    R3DDEF void UnloadModelAdvanced(Model model);                 // Unload a model.. currently same as UnloadModel
 #endif // R3D_ASSIMP_SUPPORT
 
 #endif // R3D_H
@@ -238,9 +253,8 @@ R3DDEF void SetDefferedModeShaderTexture(Texture texture, int i)
 }
 #pragma endregion
 
-//#define R3D_ASSIMP_SUPPORT
-
 #pragma region ASSIMP
+#define R3D_ASSIMP_SUPPORT
 #if defined(R3D_ASSIMP_SUPPORT)
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
@@ -252,10 +266,112 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
 
     const struct aiScene* aiModel = aiImportFile(filename, aiProcess_CalcTangentSpace | aiProcess_Triangulate);
 
+    model.transform = MatrixIdentity();
     model.meshCount = aiModel->mNumMeshes;
+    model.meshes = R3D_CALLOC(model.meshCount, sizeof(Mesh));
+
+    for(int i = 0; i < model.meshCount; i++) {
+        Mesh newMesh = {0};
+        const struct aiMesh* importMesh = aiModel->mMeshes[i];
+
+        newMesh.vertexCount = importMesh->mNumVertices;
+        // Assimp stores vertices in Vector3 (XYZ) Raylib stores vertices in float array, where every three is one vertex (XYZ)
+        newMesh.vertices = (float*)R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 3);
+        unsigned int vectorCounter = 0;
+        for(int j = 0; j < newMesh.vertexCount * 3; j +=3) {
+            newMesh.vertices[j] = importMesh->mVertices[vectorCounter].x;
+            newMesh.vertices[j + 1] = importMesh->mVertices[vectorCounter].y;
+            newMesh.vertices[j + 2] = importMesh->mVertices[vectorCounter].z;
+            vectorCounter++;
+        }
+
+        // Assimp stores texCoords in Vector3 (XYZ), Raylib uses (UV) float array
+        if(importMesh->mTextureCoords[0]) {
+            newMesh.texcoords = R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 2);
+            unsigned int texCoord = 0;
+            for(int j = 0; j < newMesh.vertexCount * 2; j += 2) {
+                newMesh.texcoords[j] = importMesh->mTextureCoords[0][texCoord].x;
+                newMesh.texcoords[j + 1] = importMesh->mTextureCoords[0][texCoord].y;
+                texCoord++;
+            }
+        }
+
+        // Raylib supports two layers of textureCoords
+        if(importMesh->mTextureCoords[1]) {
+            newMesh.texcoords2 = R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 2);
+            unsigned int texCoord = 0;
+            for(int j = 0; j < newMesh.vertexCount * 2; j += 2) {
+                newMesh.texcoords2[j] = importMesh->mTextureCoords[1][texCoord].x;
+                newMesh.texcoords2[j + 1] = importMesh->mTextureCoords[1][texCoord].y;
+                texCoord++;
+            }
+        }
+
+        newMesh.normals = (float*)R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 3);
+        unsigned int normalCounter = 0;
+        for(int j = 0; j < newMesh.vertexCount * 3; j +=3) {
+            newMesh.normals[j] = importMesh->mNormals[normalCounter].x;
+            newMesh.normals[j + 1] = importMesh->mNormals[normalCounter].y;
+            newMesh.normals[j + 2] = importMesh->mNormals[normalCounter].z;
+            normalCounter++;
+        }
+
+        unsigned int indiceTotal = 0;
+        for(unsigned int j = 0; j < importMesh->mNumFaces; j++) {
+           indiceTotal += importMesh->mFaces[j].mNumIndices;
+        }
+
+        newMesh.indices = R3D_MALLOC(sizeof(unsigned short) * indiceTotal);
+        unsigned int indexCounter = 0;
+        for(unsigned int j = 0; j < importMesh->mNumFaces; j++) {
+            for(unsigned int k = 0; k < importMesh->mFaces[j].mNumIndices; k++) {
+                newMesh.indices[indexCounter] = importMesh->mFaces[j].mIndices[k];
+                indexCounter++;
+            }
+        }
+
+        newMesh.triangleCount = importMesh->mNumFaces;
+
+        if(importMesh->mTangents) {
+            newMesh.tangents = (float*)R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 4);
+            unsigned int tangentCounter = 0;
+            for(int j = 0; j < newMesh.vertexCount * 4; j += 4) {
+                newMesh.tangents[j] = importMesh->mTangents[tangentCounter].x;
+                newMesh.tangents[j + 1] = importMesh->mTangents[tangentCounter].y;
+                newMesh.tangents[j + 3] = importMesh->mTangents[tangentCounter].z;
+                newMesh.tangents[j + 4] = 0;
+                tangentCounter++;
+            }
+        }
+
+        if(importMesh->mColors[0]) {
+            newMesh.colors = (float*)R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 4);
+            unsigned int colorCounter = 0;
+            for(int j = 0; j < newMesh.vertexCount * 4; j += 4) {
+                newMesh.colors[j] = importMesh->mColors[0][colorCounter].r;
+                newMesh.colors[j + 1] = importMesh->mColors[0][colorCounter].g;
+                newMesh.colors[j + 3] = importMesh->mColors[0][colorCounter].b;
+                newMesh.colors[j + 4] = importMesh->mColors[0][colorCounter].a;
+                colorCounter++;
+            }
+        }
+        
+        
+        //Transfer newMesh to our return Model
+        newMesh.vboId = (unsigned int*)R3D_CALLOC(7, sizeof(unsigned int));
+        model.meshes[i] = newMesh;
+    }
+
+    for(int i = 0; i < model.meshCount; i++) {
+        rlLoadMesh(&model.meshes[i], false);
+    }
     
     aiReleaseImport(aiModel);
     return model;
+}
+
+R3DDEF void UnloadModelAdvanced(Model model) {
+    UnloadModel(model);
 }
 #pragma endregion
 
