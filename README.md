@@ -1,8 +1,8 @@
 # raylib-3D
-An extension library for the amazing raylib library, that adds better support for 3D. The Deffered Rendering is based on the work done by @TheLumaio, but moved to a single header format with functions and data structures renamed to better follow the raylib code style.
+An extension library for the amazing raylib library, that adds better support for 3D. The Deferred Rendering is based on the work done by @TheLumaio, but moved to a single header format with functions and data structures renamed to better follow the raylib code style.
 
 Current Implementation Plan:
-- [x] Deffered Rendering
+- [x] Deferred Rendering
 - [ ] Model, Material, Animation loading through Assimp
 - [ ] Skeletal Animation playback
 
