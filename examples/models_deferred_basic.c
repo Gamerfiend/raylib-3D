@@ -87,13 +87,13 @@ int main()
 
             ClearBackground(RAYWHITE);
 
-            BeginDefferedMode(gBuffer);
+            BeginDeferredMode(gBuffer);
                 BeginMode3D(camera);
 
                     DrawModel(model, mapPosition, 1.0f, WHITE);                     // Draw maze map
 
                 EndMode3D();
-            EndDefferedMode();
+            EndDeferredMode();
 
             DrawTexturePro(gBuffer.color, (Rectangle){0, 0, gBuffer.width, -gBuffer.height}, (Rectangle){0, 0, gBuffer.width, gBuffer.height}, Vector2Zero(), 0.0f, WHITE);
 

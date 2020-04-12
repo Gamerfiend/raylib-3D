@@ -113,19 +113,19 @@ int main()
 
             ClearBackground(RAYWHITE);
 
-            BeginDefferedMode(gBuffer);
+            BeginDeferredMode(gBuffer);
                 BeginMode3D(camera);
 
                     DrawModel(model, mapPosition, 1.0f, WHITE);                     // Draw maze map
 
                 EndMode3D();
-            EndDefferedMode();
+            EndDeferredMode();
 
             BeginShaderMode(lightingShader);
-                SetDefferedModeShaderTexture(gBuffer.color, 1);
-                SetDefferedModeShaderTexture(gBuffer.normal, 2);
-                SetDefferedModeShaderTexture(gBuffer.position, 3);
-                SetDefferedModeShaderTexture(GetTextureDefault(), 4);
+                SetDeferredModeShaderTexture(gBuffer.color, 1);
+                SetDeferredModeShaderTexture(gBuffer.normal, 2);
+                SetDeferredModeShaderTexture(gBuffer.position, 3);
+                SetDeferredModeShaderTexture(GetTextureDefault(), 4);
                 DrawTexturePro(gBuffer.color, (Rectangle){0, 0, gBuffer.width, -gBuffer.height}, (Rectangle){0, 0, gBuffer.width, gBuffer.height}, Vector2Zero(), 0.0f, WHITE);
             EndShaderMode();
 
