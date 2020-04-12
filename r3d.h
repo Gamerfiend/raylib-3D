@@ -94,9 +94,9 @@ typedef struct GBuffer {
 
 R3DDEF GBuffer LoadGBuffer(int width, int height);                // Loads a new GBuffer with given screen constraints
 R3DDEF void UnloadGBuffer(GBuffer gbuffer);                       // Unload an existing GBuffer 
-R3DDEF void BeginDeferedMode(GBuffer gbuffer);                   // Begin drawing in Defered mode (using GBuffer) NOTE: Should be called after BeginDrawing, before BeginMode3D
-R3DDEF void EndDeferedMode();                                    // End drawing of Defered mode
-R3DDEF void SetDeferedModeShaderTexture(Texture texture, int i); // Sets and binds a texture to active in GL context
+R3DDEF void BeginDeferredMode(GBuffer gbuffer);                   // Begin drawing in Deferred mode (using GBuffer) NOTE: Should be called after BeginDrawing, before BeginMode3D
+R3DDEF void EndDeferredMode();                                    // End drawing of Deferred mode
+R3DDEF void SetDeferredModeShaderTexture(Texture texture, int i); // Sets and binds a texture to active in GL context
 
 #if defined(R3D_ASSIMP_SUPPORT)
     R3DDEF Model LoadModelAdvanced(const char* filename);         // Loads a model from ASSIMP (External Dependency)
@@ -209,7 +209,7 @@ R3DDEF void UnloadGBuffer(GBuffer gbuffer)
     rlDeleteTextures(gbuffer.position.id);
 }
 
-R3DDEF void BeginDeferedMode(GBuffer gbuffer)
+R3DDEF void BeginDeferredMode(GBuffer gbuffer)
 {
     rlglDraw();
     rlEnableRenderTexture(gbuffer.id);
@@ -228,7 +228,7 @@ R3DDEF void BeginDeferedMode(GBuffer gbuffer)
     glDisable(GL_BLEND);
 }
 
-R3DDEF void EndDeferedMode()
+R3DDEF void EndDeferredMode()
 {
     glEnable(GL_BLEND);
     rlglDraw();
@@ -246,7 +246,7 @@ R3DDEF void EndDeferedMode()
     rlLoadIdentity();
 } 
 
-R3DDEF void SetDeferedModeShaderTexture(Texture texture, int i) 
+R3DDEF void SetDeferredModeShaderTexture(Texture texture, int i) 
 {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, texture.id);
