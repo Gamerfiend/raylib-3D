@@ -267,61 +267,57 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
 
     model.transform = MatrixIdentity();
     
-    
     // Load Materials
     model.materialCount = aiModel->mNumMaterials;
+    model.meshMaterial = R3D_CALLOC(model.meshCount, sizeof(int));
     model.materials = R3D_CALLOC(model.materialCount, sizeof(Material));
+    bool* activeMeshMaterials = R3D_CALLOC(model.materialCount, sizeof(bool));
 
-    for(int i = 0; i < model.materialCount; i++) {
-
-    }
-    
     //Load Meshes for Model
     model.meshCount = aiModel->mNumMeshes;
     model.meshes = R3D_CALLOC(model.meshCount, sizeof(Mesh));
     for(int i = 0; i < model.meshCount; i++) {
-        Mesh newMesh = {0};
         const struct aiMesh* importMesh = aiModel->mMeshes[i];
 
-        newMesh.vertexCount = importMesh->mNumVertices;
+        model.meshes[i].vertexCount = importMesh->mNumVertices;
         // Assimp stores vertices in Vector3 (XYZ) Raylib stores vertices in float array, where every three is one vertex (XYZ)
-        newMesh.vertices = (float*)R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 3);
+        model.meshes[i].vertices = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 3);
         unsigned int vectorCounter = 0;
-        for(int j = 0; j < newMesh.vertexCount * 3; j +=3) {
-            newMesh.vertices[j] = importMesh->mVertices[vectorCounter].x;
-            newMesh.vertices[j + 1] = importMesh->mVertices[vectorCounter].y;
-            newMesh.vertices[j + 2] = importMesh->mVertices[vectorCounter].z;
+        for(int j = 0; j < model.meshes[i].vertexCount * 3; j +=3) {
+            model.meshes[i].vertices[j] = importMesh->mVertices[vectorCounter].x;
+            model.meshes[i].vertices[j + 1] = importMesh->mVertices[vectorCounter].y;
+            model.meshes[i].vertices[j + 2] = importMesh->mVertices[vectorCounter].z;
             vectorCounter++;
         }
 
         // Assimp stores texCoords in Vector3 (XYZ), Raylib uses (UV) float array
         if(importMesh->mTextureCoords[0]) {
-            newMesh.texcoords = R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 2);
+            model.meshes[i].texcoords = R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
             unsigned int texCoord = 0;
-            for(int j = 0; j < newMesh.vertexCount * 2; j += 2) {
-                newMesh.texcoords[j] = importMesh->mTextureCoords[0][texCoord].x;
-                newMesh.texcoords[j + 1] = importMesh->mTextureCoords[0][texCoord].y;
+            for(int j = 0; j < model.meshes[i].vertexCount * 2; j += 2) {
+                model.meshes[i].texcoords[j] = importMesh->mTextureCoords[0][texCoord].x;
+                model.meshes[i].texcoords[j + 1] = importMesh->mTextureCoords[0][texCoord].y;
                 texCoord++;
             }
         }
 
         // Raylib supports two layers of textureCoords
         if(importMesh->mTextureCoords[1]) {
-            newMesh.texcoords2 = R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 2);
+            model.meshes[i].texcoords2 = R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
             unsigned int texCoord = 0;
-            for(int j = 0; j < newMesh.vertexCount * 2; j += 2) {
-                newMesh.texcoords2[j] = importMesh->mTextureCoords[1][texCoord].x;
-                newMesh.texcoords2[j + 1] = importMesh->mTextureCoords[1][texCoord].y;
+            for(int j = 0; j < model.meshes[i].vertexCount * 2; j += 2) {
+                model.meshes[i].texcoords2[j] = importMesh->mTextureCoords[1][texCoord].x;
+                model.meshes[i].texcoords2[j + 1] = importMesh->mTextureCoords[1][texCoord].y;
                 texCoord++;
             }
         }
 
-        newMesh.normals = (float*)R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 3);
+        model.meshes[i].normals = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 3);
         unsigned int normalCounter = 0;
-        for(int j = 0; j < newMesh.vertexCount * 3; j +=3) {
-            newMesh.normals[j] = importMesh->mNormals[normalCounter].x;
-            newMesh.normals[j + 1] = importMesh->mNormals[normalCounter].y;
-            newMesh.normals[j + 2] = importMesh->mNormals[normalCounter].z;
+        for(int j = 0; j < model.meshes[i].vertexCount * 3; j +=3) {
+            model.meshes[i].normals[j] = importMesh->mNormals[normalCounter].x;
+            model.meshes[i].normals[j + 1] = importMesh->mNormals[normalCounter].y;
+            model.meshes[i].normals[j + 2] = importMesh->mNormals[normalCounter].z;
             normalCounter++;
         }
 
@@ -330,45 +326,48 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
            indiceTotal += importMesh->mFaces[j].mNumIndices;
         }
 
-        newMesh.indices = R3D_MALLOC(sizeof(unsigned short) * indiceTotal);
+        model.meshes[i].indices = R3D_MALLOC(sizeof(unsigned short) * indiceTotal);
         unsigned int indexCounter = 0;
         for(unsigned int j = 0; j < importMesh->mNumFaces; j++) {
             for(unsigned int k = 0; k < importMesh->mFaces[j].mNumIndices; k++) {
-                newMesh.indices[indexCounter] = importMesh->mFaces[j].mIndices[k];
+                model.meshes[i].indices[indexCounter] = importMesh->mFaces[j].mIndices[k];
                 indexCounter++;
             }
         }
 
-        newMesh.triangleCount = importMesh->mNumFaces;
+        model.meshes[i].triangleCount = importMesh->mNumFaces;
 
         if(importMesh->mTangents) {
-            newMesh.tangents = (float*)R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 4);
+            model.meshes[i].tangents = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 4);
             unsigned int tangentCounter = 0;
-            for(int j = 0; j < newMesh.vertexCount * 4; j += 4) {
-                newMesh.tangents[j] = importMesh->mTangents[tangentCounter].x;
-                newMesh.tangents[j + 1] = importMesh->mTangents[tangentCounter].y;
-                newMesh.tangents[j + 2] = importMesh->mTangents[tangentCounter].z;
-                newMesh.tangents[j + 3] = 0;
+            for(int j = 0; j < model.meshes[i].vertexCount * 4; j += 4) {
+                model.meshes[i].tangents[j] = importMesh->mTangents[tangentCounter].x;
+                model.meshes[i].tangents[j + 1] = importMesh->mTangents[tangentCounter].y;
+                model.meshes[i].tangents[j + 2] = importMesh->mTangents[tangentCounter].z;
+                model.meshes[i].tangents[j + 3] = 0;
                 tangentCounter++;
             }
         }
 
         if(importMesh->mColors[0]) {
-            newMesh.colors = (float*)R3D_MALLOC((sizeof(float) * newMesh.vertexCount) * 4);
+            model.meshes[i].colors = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 4);
             unsigned int colorCounter = 0;
-            for(int j = 0; j < newMesh.vertexCount * 4; j += 4) {
-                newMesh.colors[j] = importMesh->mColors[0][colorCounter].r;
-                newMesh.colors[j + 1] = importMesh->mColors[0][colorCounter].g;
-                newMesh.colors[j + 2] = importMesh->mColors[0][colorCounter].b;
-                newMesh.colors[j + 3] = importMesh->mColors[0][colorCounter].a;
+            for(int j = 0; j < model.meshes[i].vertexCount * 4; j += 4) {
+                model.meshes[i].colors[j] = importMesh->mColors[0][colorCounter].r;
+                model.meshes[i].colors[j + 1] = importMesh->mColors[0][colorCounter].g;
+                model.meshes[i].colors[j + 2] = importMesh->mColors[0][colorCounter].b;
+                model.meshes[i].colors[j + 3] = importMesh->mColors[0][colorCounter].a;
                 colorCounter++;
             }
         }
+
+        // Mark this material index as active, so we can coorelate it to a material
+        if(importMesh->mMaterialIndex >= 0) {
+            model.meshMaterial[i] = importMesh->mMaterialIndex;
+            activeMeshMaterials[importMesh->mMaterialIndex] = true;
+        }
         
-        
-        //Transfer newMesh to our return Model
-        newMesh.vboId = (unsigned int*)R3D_CALLOC(7, sizeof(unsigned int));
-        model.meshes[i] = newMesh;
+        model.meshes[i].vboId = (unsigned int*)R3D_CALLOC(7, sizeof(unsigned int));
     }
 
     for(int i = 0; i < model.meshCount; i++) {
