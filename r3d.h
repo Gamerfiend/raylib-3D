@@ -104,7 +104,7 @@ R3DDEF void SetDeferredModeShaderTexture(Texture texture, int i); // Sets and bi
 #endif // R3D_ASSIMP_SUPPORT
 
 #endif // R3D_H
-
+//#define R3D_IMPLEMENTATION
 // Raylib-3D Implementation
 #if defined(R3D_IMPLEMENTATION)
 #include <rlgl.h>
@@ -252,26 +252,73 @@ R3DDEF void SetDeferredModeShaderTexture(Texture texture, int i)
     glBindTexture(GL_TEXTURE_2D, texture.id);
 }
 #pragma endregion
-
+//#define R3D_ASSIMP_SUPPORT
 #pragma region ASSIMP
 #if defined(R3D_ASSIMP_SUPPORT)
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
+#include <assimp/types.h>
 #include <assimp/postprocess.h>
 
 R3DDEF Model LoadModelAdvanced(const char* filename)
 {
     Model model = {0};
-
     const struct aiScene* aiModel = aiImportFile(filename, aiProcess_CalcTangentSpace | aiProcess_Triangulate);
 
     model.transform = MatrixIdentity();
     
     // Load Materials
     model.materialCount = aiModel->mNumMaterials;
-    model.meshMaterial = R3D_CALLOC(model.meshCount, sizeof(int));
-    model.materials = R3D_CALLOC(model.materialCount, sizeof(Material));
-    bool* activeMeshMaterials = R3D_CALLOC(model.materialCount, sizeof(bool));
+    model.meshMaterial = (int*)R3D_CALLOC(model.meshCount, sizeof(int));
+    model.materials = (Material*)R3D_CALLOC(model.materialCount, sizeof(Material));
+    
+    for(int i = 0; i < model.materialCount; i++) {
+
+        // Must support both base color and diffuse texture.. in any case, we favor base color over diffuse
+        unsigned int diffuseAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_DIFFUSE);
+        unsigned int baseColorAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_BASE_COLOR);
+
+        // If only Diffuse exist, then use it
+        if ((diffuseAmount > 0) && (baseColorAmount <= 0)) {
+            struct aiString str;
+            enum aiTextureMapping mapping;
+            enum aiTextureOp operation;
+            unsigned int uvIndex = 0;
+            unsigned int textureIndex = 0;
+            float blend;
+            enum aiTextureMapMode mode;
+            unsigned int flags;
+
+            if(aiGetMaterialTexture(aiModel->mMaterials[i], aiTextureType_DIFFUSE, textureIndex, &str, &mapping, &uvIndex, &blend, &operation, &mode, &flags) == aiReturn_SUCCESS) {
+                //model.materials[i].maps[MAP_ALBEDO].texture
+                //model.materials[i].maps[MAP_ALBEDO].color
+            }
+        } else if (baseColorAmount > 0) {
+            //aiGetMaterialTexture();
+            //model.materials[i].maps[MAP_ALBEDO].texture
+            //model.materials[i].maps[MAP_ALBEDO].color
+        }
+
+        // Must support both normals and normal camera.. as normal camera is used by ASSIMP for normal map textures in some PBR formats
+        unsigned int normalsAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_NORMALS);
+        unsigned int normalPBRAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_NORMAL_CAMERA);
+        
+        // Must support both metalness and specular.. as metal is for PBR.. specular matches diffuse flow
+        unsigned int metalAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_METALNESS);
+        unsigned int specularAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_SPECULAR);
+
+        // Must support both as the models could use the old flow.. or the current flow
+        unsigned int ambientOccAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_AMBIENT_OCCLUSION);
+        unsigned int ambientOccOldAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_LIGHTMAP);
+
+        // Unique texture slots
+        unsigned int roughnessAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_DIFFUSE_ROUGHNESS);
+        unsigned int emissiveAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_EMISSIVE);
+        unsigned int heightAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_HEIGHT);
+        unsigned int opacityAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_OPACITY);
+
+        //aiTextureType_AMBIENT; Not currently supported, this is the result of the ambient lighting equation..
+    }
 
     //Load Meshes for Model
     model.meshCount = aiModel->mNumMeshes;
@@ -292,7 +339,7 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
 
         // Assimp stores texCoords in Vector3 (XYZ), Raylib uses (UV) float array
         if(importMesh->mTextureCoords[0]) {
-            model.meshes[i].texcoords = R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
+            model.meshes[i].texcoords = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
             unsigned int texCoord = 0;
             for(int j = 0; j < model.meshes[i].vertexCount * 2; j += 2) {
                 model.meshes[i].texcoords[j] = importMesh->mTextureCoords[0][texCoord].x;
@@ -303,7 +350,7 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
 
         // Raylib supports two layers of textureCoords
         if(importMesh->mTextureCoords[1]) {
-            model.meshes[i].texcoords2 = R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
+            model.meshes[i].texcoords2 = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
             unsigned int texCoord = 0;
             for(int j = 0; j < model.meshes[i].vertexCount * 2; j += 2) {
                 model.meshes[i].texcoords2[j] = importMesh->mTextureCoords[1][texCoord].x;
@@ -326,7 +373,7 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
            indiceTotal += importMesh->mFaces[j].mNumIndices;
         }
 
-        model.meshes[i].indices = R3D_MALLOC(sizeof(unsigned short) * indiceTotal);
+        model.meshes[i].indices = (unsigned short*)R3D_MALLOC(sizeof(unsigned short) * indiceTotal);
         unsigned int indexCounter = 0;
         for(unsigned int j = 0; j < importMesh->mNumFaces; j++) {
             for(unsigned int k = 0; k < importMesh->mFaces[j].mNumIndices; k++) {
@@ -364,7 +411,6 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
         // Mark this material index as active, so we can coorelate it to a material
         if(importMesh->mMaterialIndex >= 0) {
             model.meshMaterial[i] = importMesh->mMaterialIndex;
-            activeMeshMaterials[importMesh->mMaterialIndex] = true;
         }
         
         model.meshes[i].vboId = (unsigned int*)R3D_CALLOC(7, sizeof(unsigned int));
