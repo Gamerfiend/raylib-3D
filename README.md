@@ -16,6 +16,8 @@ Wherever possible, this extension library will follow the raylib paradigm in bot
 ## Usage
 The examples are a good place to start when wanting to see this library extension in action!
 
+You'll need to have the includes folder in your project directory, as R3D uses glad for OpenGL profile loading and stb_image for texture loading in assimp support.
+
 There are some configurable options that can be defined before the implementation and inclusion of the header file.
 ```c
 #define R3D_ASSIMP_SUPPORT // Enable assimp support
