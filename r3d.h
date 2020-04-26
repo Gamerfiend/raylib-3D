@@ -15,8 +15,10 @@
 *
 *   #define R3D_ASSIMP_SUPPORT
 *       Defining this before the implementation adds support for Model/Material/Animation loading 
-*       via the library assimp. NOTE: assimp is NOT included, is an external dependency that must
-*       first install.
+*       via the library assimp. 
+*       NOTE: assimp is NOT included, is an external dependency that must
+*       first install. By using assimp, you will have to compile project with g++ or a compliant C++
+*       compiler.
 *
 *   #define R3D_GLAD
 *       Define if loading OpenGL
@@ -111,7 +113,7 @@ R3DDEF void SetDeferredModeShaderTexture(Texture texture, int i); // Sets and bi
 
 #if !defined(R3D_GLAD)
     //#define GLAD_IMPLEMENTATION
-    #include "glad.h"
+    #include "includes/glad.h"
 #endif
 
 #pragma region GBUFFER
@@ -165,6 +167,8 @@ R3DDEF GBuffer LoadGBuffer(int width, int height)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gbuffer.color.id, 0);
     
     unsigned int buffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+
+    //TODO: Query for extensions, these must be checked to ensure the user platform supports them.. ES2 may support glDrawBuffersEXT().. WebGL may support through the ANGLE web extensions
     #if defined(GRAPHICS_API_OPENGL_ES2) // use extension where availible 
         glDrawBuffersEXT(3, buffers);
     #else //glDrawBuffers only availible on ES 3.0, GL 2, 3, 4
@@ -259,28 +263,42 @@ R3DDEF void SetDeferredModeShaderTexture(Texture texture, int i)
 #include <assimp/scene.h>
 #include <assimp/types.h>
 #include <assimp/postprocess.h>
+#include <assimp/color4.h>
+#include <stdio.h>
+#include "includes/stb_image.h"
 
 R3DDEF Model LoadModelAdvanced(const char* filename)
 {
     Model model = {0};
-    const struct aiScene* aiModel = aiImportFile(filename, aiProcess_CalcTangentSpace | aiProcess_Triangulate);
-
-    model.transform = MatrixIdentity();
+    const struct aiScene* aiModel = aiImportFile(filename, aiProcess_Triangulate);
+    //TODO Error handling for when a model isn't loaded successfully
+    if (!aiModel) {
+        TraceLog(LOG_ERROR, "LoadModelAdvanced: Unable able to load model %s", filename);
+        return model;
+    }
     
+    model.transform = MatrixIdentity();
+
     // Load Materials
     model.materialCount = aiModel->mNumMaterials;
     model.meshMaterial = (int*)R3D_CALLOC(model.meshCount, sizeof(int));
     model.materials = (Material*)R3D_CALLOC(model.materialCount, sizeof(Material));
     
     for(int i = 0; i < model.materialCount; i++) {
+        model.materials[i] = LoadMaterialDefault();
+        char buffer[512] = "unnamed";
+        struct aiString path;
 
         // Must support both base color and diffuse texture.. in any case, we favor base color over diffuse
         unsigned int diffuseAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_DIFFUSE);
         unsigned int baseColorAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_BASE_COLOR);
 
-        // If only Diffuse exist, then use it
-        if ((diffuseAmount > 0) && (baseColorAmount <= 0)) {
-            struct aiString str;
+        aiColor4D color = (aiColor4D){0.f,0.f,0.f,0.f};
+        if(aiGetMaterialColor(aiModel->mMaterials[i], AI_MATKEY_COLOR_DIFFUSE, &color) == aiReturn_SUCCESS) {
+            model.materials[i].maps[MAP_ALBEDO].color = (Color){(unsigned char)(color.r * 255), (unsigned char)(color.g * 255), (unsigned char)(color.b * 255), (unsigned char)(color.a * 255)};
+        }
+
+        if (diffuseAmount > 0) {
             enum aiTextureMapping mapping;
             enum aiTextureOp operation;
             unsigned int uvIndex = 0;
@@ -289,22 +307,50 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
             enum aiTextureMapMode mode;
             unsigned int flags;
 
-            if(aiGetMaterialTexture(aiModel->mMaterials[i], aiTextureType_DIFFUSE, textureIndex, &str, &mapping, &uvIndex, &blend, &operation, &mode, &flags) == aiReturn_SUCCESS) {
-                //model.materials[i].maps[MAP_ALBEDO].texture
-                //model.materials[i].maps[MAP_ALBEDO].color
-            }
-        } else if (baseColorAmount > 0) {
-            //aiGetMaterialTexture();
-            //model.materials[i].maps[MAP_ALBEDO].texture
-            //model.materials[i].maps[MAP_ALBEDO].color
-        }
+            if(aiGetMaterialTexture(aiModel->mMaterials[i], aiTextureType_DIFFUSE, textureIndex, &path, &mapping, &uvIndex, &blend, &operation, &mode, &flags) == aiReturn_SUCCESS) {
+                strncpy(buffer, path.data, sizeof(buffer));
+                const char embedded[] = {"*"};
 
+                // Embedded texture
+                if(TextIsEqual(TextSubtext(buffer, 0, 1), embedded)) {
+                    const char* cindex = TextSubtext(buffer, 1, TextLength(buffer));
+                    unsigned int index = atoi(cindex);
+                    struct aiTexture* embeddedTexture = aiModel->mTextures[index];
+
+                    unsigned char* imageData = NULL;
+                    int width;
+                    int height;
+                    Image rImage = {0};
+
+                    // Texture is compressed.. (jpg)
+                    if (embeddedTexture->mHeight == 0) {
+                        imageData = stbi_load_from_memory((const unsigned char*)embeddedTexture->pcData, embeddedTexture->mWidth, &width, &height, NULL, 4);
+                    } else {
+                        imageData = stbi_load_from_memory((const unsigned char*)embeddedTexture->pcData, embeddedTexture->mWidth * embeddedTexture->mHeight, &width, &height, NULL, 4);
+                    }
+
+                    rImage.data = imageData;
+                    rImage.width = width;
+                    rImage.height = height;
+                    rImage.format = UNCOMPRESSED_R8G8B8A8;
+                    rImage.mipmaps = 1;
+
+                    model.materials[i].maps[MAP_ALBEDO].texture = LoadTextureFromImage(rImage);
+                    UnloadImage(rImage);
+                } else {
+                    model.materials[i].maps[MAP_ALBEDO].texture = LoadTexture(buffer);
+                }
+                
+            }
+        }
         // Must support both normals and normal camera.. as normal camera is used by ASSIMP for normal map textures in some PBR formats
         unsigned int normalsAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_NORMALS);
         unsigned int normalPBRAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_NORMAL_CAMERA);
         
         // Must support both metalness and specular.. as metal is for PBR.. specular matches diffuse flow
+        //aiTextureType_AMBIENT; Not currently supported, this is the result of the ambient lighting equation.. metalness
         unsigned int metalAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_METALNESS);
+
         unsigned int specularAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_SPECULAR);
 
         // Must support both as the models could use the old flow.. or the current flow
@@ -312,19 +358,18 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
         unsigned int ambientOccOldAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_LIGHTMAP);
 
         // Unique texture slots
+        //aiTextureType_SHININESS also roughness
         unsigned int roughnessAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_DIFFUSE_ROUGHNESS);
         unsigned int emissiveAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_EMISSIVE);
         unsigned int heightAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_HEIGHT);
         unsigned int opacityAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_OPACITY);
-
-        //aiTextureType_AMBIENT; Not currently supported, this is the result of the ambient lighting equation..
     }
 
     //Load Meshes for Model
     model.meshCount = aiModel->mNumMeshes;
-    model.meshes = R3D_CALLOC(model.meshCount, sizeof(Mesh));
+    model.meshes = (Mesh*)R3D_CALLOC(model.meshCount, sizeof(Mesh));
     for(int i = 0; i < model.meshCount; i++) {
-        const struct aiMesh* importMesh = aiModel->mMeshes[i];
+        struct aiMesh* importMesh = aiModel->mMeshes[i];
 
         model.meshes[i].vertexCount = importMesh->mNumVertices;
         // Assimp stores vertices in Vector3 (XYZ) Raylib stores vertices in float array, where every three is one vertex (XYZ)
@@ -397,7 +442,7 @@ R3DDEF Model LoadModelAdvanced(const char* filename)
         }
 
         if(importMesh->mColors[0]) {
-            model.meshes[i].colors = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 4);
+            model.meshes[i].colors = (unsigned char*)R3D_MALLOC((sizeof(unsigned char) * model.meshes[i].vertexCount) * 4);
             unsigned int colorCounter = 0;
             for(int j = 0; j < model.meshes[i].vertexCount * 4; j += 4) {
                 model.meshes[i].colors[j] = importMesh->mColors[0][colorCounter].r;

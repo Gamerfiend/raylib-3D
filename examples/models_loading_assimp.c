@@ -1,3 +1,5 @@
+//g++ models_loading_assimp.c -lraylib -lgdi32 -lwinmm -lassimp -lIrrXML -lzlibstatic
+
 #define R3D_ASSIMP_SUPPORT
 #define R3D_IMPLEMENTATION
 #include "../r3d.h"
@@ -23,7 +25,7 @@ int main(void)
 
     SetTargetFPS(60);                       // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
-
+    Model model = LoadModelAdvanced("assets/models/tilewall.glb");
     // Main game loop
     while (!WindowShouldClose())            // Detect window close button or ESC key
     {
@@ -36,11 +38,12 @@ int main(void)
         //----------------------------------------------------------------------------------
         BeginDrawing();
 
-            ClearBackground(RAYWHITE);
+            ClearBackground(WHITE);
 
             BeginMode3D(camera);
 
                 DrawGrid(10, 1.0f);        // Draw a grid
+                DrawModel(model, Vector3Zero(), 1.0f, WHITE);
 
             EndMode3D();
 
@@ -49,7 +52,7 @@ int main(void)
         EndDrawing();
         //----------------------------------------------------------------------------------
     }
-
+    UnloadModelAdvanced(model);
     CloseWindow();              // Close window and OpenGL context
     return 0;
 }
