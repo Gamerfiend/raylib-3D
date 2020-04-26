@@ -3,8 +3,10 @@ An extension library for the amazing raylib library, that adds better support fo
 
 Current Implementation Plan:
 - [x] Deferred Rendering
-- [ ] Model, Material, Animation loading through Assimp
+- [x] Model, Material loading through Assimp
 - [ ] Skeletal Animation playback
+- [ ] Lightmapping
+- [ ] Shadowmapping
 
 Wherever possible, this extension library will follow the raylib paradigm in both naming convention and ease of use. Users should be able to include this with raylib, and have interoperability. 
 
