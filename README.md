@@ -4,7 +4,7 @@ An extension library for the amazing raylib library, that adds better support fo
 Current Implementation Plan:
 - [x] Deferred Rendering
 - [x] Model, Material loading through Assimp
-- [ ] Skeletal Animation playback
+- [ ] [Skeletal Animation playback](https://gist.github.com/Gamerfiend/18206474679bf5873925c839d0d6a6d0)
 - [ ] Lightmapping
 - [ ] Shadowmapping
 
@@ -14,6 +14,8 @@ Wherever possible, this extension library will follow the raylib paradigm in bot
 - The Lumaio, [for work on GBuffer implementation using raylib](https://github.com/TheLumaio/Raylib-GBuffers)
 - Raysan, for the creation of raylib!
 
+## Skeletal Animation
+The examples are a great place to start when wanting to use skeletal animations, for a detailed implementation guide checkout [skeletal animations with raylib-3D](https://gist.github.com/Gamerfiend/18206474679bf5873925c839d0d6a6d0).
 
 ## Usage
 The examples are a good place to start when wanting to see this library extension in action!
