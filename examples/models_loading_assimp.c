@@ -1,4 +1,5 @@
-//g++ models_loading_assimp.c -lraylib -lgdi32 -lwinmm -lassimp -lIrrXML -lzlibstatic
+// Building on Windows using MinGW
+// g++ models_loading_assimp.c -lraylib -lgdi32 -lwinmm -lassimp -lIrrXML -lzlibstatic
 
 #define R3D_ASSIMP_SUPPORT
 #define R3D_IMPLEMENTATION
