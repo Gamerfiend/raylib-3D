@@ -1,6 +1,6 @@
 /**********************************************************************************************
 *
-*   raylib-3D v0.1 - 3D extension library for raylib
+*   raylib-3D v0.2 - 3D extension library for raylib
 *
 *   DESCRIPTION:
 *
@@ -14,14 +14,20 @@
 *       or source files without problems. But only ONE file should hold the implementation.
 *
 *   #define R3D_ASSIMP_SUPPORT
-*       Defining this before the implementation adds support for Model/Material/Animation loading 
+*       Defining this before R3D_IMPLEMENTATION adds support for Model/Material/Animation loading 
 *       via the library assimp. 
 *       NOTE: assimp is NOT included, is an external dependency that must
 *       first install. By using assimp, you will have to compile project with g++ or a compliant C++
 *       compiler.
 *
+*   #define R3D_SKELETAL_ANIMATION_SUPPORT
+*       Defining this before R3D_IMPLEMENTATION adds support for 3D skeletal animation, following standard
+*       set by GLTF, COLLADE, FBX and more. The implementation follows suit by similar indie engines with 
+*       open source code. Largely follows http://www.ogldev.org/www/tutorial38/tutorial38.html
+*
 *   #define R3D_GLAD
-*       Define if loading OpenGL
+*       Define this flag if you wish to include your own GLAD OpenGL profile.
+*       NOTE: Currently this flag is unsupported
 *
 *   #define R3D_CUSTOM_ALLOCATORS
 *   #define R3D_MALLOC()
@@ -84,8 +90,7 @@
 
 // GBuffer implementation based on @TheLumaio
 // GBuffer stores multiple render targets for a single render pass
-typedef struct GBuffer
-{
+typedef struct GBuffer {
     unsigned int id;
     int width;
     int height;
@@ -106,9 +111,31 @@ R3DDEF Model LoadModelAdvanced(const char *filename); // Loads a model from ASSI
 R3DDEF void UnloadModelAdvanced(Model model);         // Unload a model.. currently same as UnloadModel
 #endif                                                // R3D_ASSIMP_SUPPORT
 
+#if defined(R3D_SKELETAL_ANIMATION_SUPPORT)
+typedef struct SkeletalBone {
+    unsigned int id;       // id correlates directly to Raylib's BoneInfo id
+    Matrix offsetMatrix;   // transforms local spaced vertices into bone space (skeleton)
+    Matrix finalTransform; // Combination of the inverse matrix, offset matrix and global transform
+} SkeletalBone;
+
+typedef struct SkeletalAnimationChannel {
+    char *name;            // name of this bone... NOTE: Could this changed to the id?
+    Transform *transforms; // each transform represents this bone's position, rotation, and scale 
+    unsigned int transformsAmount;
+} SkeletalAnimationChannel;
+
+typedef struct SkeletalAnimation {
+    float duration;                      // length in ticks
+    float ticksPerSecond;                // e.g 100 duration (ticks) at 25 ticks per second would give us a ~4 second animation
+    unsigned int channelsAmount;
+    SkeletalAnimationChannel *channels;  // these are the bones (skeleton) for an animation.. TODO: Channels should be replaced with a HashMap<channelName, channel> for 0(1) lookup.. must find c lib for such
+} SkeletalAnimation;
+
+R3DDEF void LoadSkeletalAnimations()
+#endif   
+
 #endif // R3D_H
-//#define R3D_IMPLEMENTATION
-// Raylib-3D Implementation
+
 #if defined(R3D_IMPLEMENTATION)
 #include <rlgl.h>
 
@@ -263,7 +290,7 @@ R3DDEF void SetDeferredModeShaderTexture(Texture texture, int i)
     glBindTexture(GL_TEXTURE_2D, texture.id);
 }
 #pragma endregion
-//#define R3D_ASSIMP_SUPPORT
+
 #pragma region ASSIMP
 #if defined(R3D_ASSIMP_SUPPORT)
 #include <assimp/cimport.h>
@@ -514,7 +541,12 @@ R3DDEF void UnloadModelAdvanced(Model model)
 {
     UnloadModel(model);
 }
+#endif // R3D_ASSIMP_SUPPORT
 #pragma endregion
 
-#endif // R3D_ASSIMP_SUPPORT
+#pragma region SKELETAL
+#if defined(R3D_SKELETAL_ANIMATION_SUPPORT)
+#endif // R3D_SKELETAL_ANIMATION_SUPPORT
+#pragma endregion 
+
 #endif // R3D_IMPLEMENTATION
