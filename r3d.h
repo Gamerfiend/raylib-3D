@@ -106,11 +106,6 @@ R3DDEF void BeginDeferredMode(GBuffer gbuffer);                   // Begin drawi
 R3DDEF void EndDeferredMode();                                    // End drawing of Deferred mode
 R3DDEF void SetDeferredModeShaderTexture(Texture texture, int i); // Sets and binds a texture to active in GL context
 
-#if defined(R3D_ASSIMP_SUPPORT)
-R3DDEF Model LoadModelAdvanced(const char *filename); // Loads a model from ASSIMP (External Dependency)
-R3DDEF void UnloadModelAdvanced(Model model);         // Unload a model.. currently same as UnloadModel
-#endif                                                // R3D_ASSIMP_SUPPORT
-
 #if defined(R3D_SKELETAL_ANIMATION_SUPPORT)
 typedef struct SkeletalBone {
     unsigned int id;       // id correlates directly to Raylib's BoneInfo id
@@ -131,8 +126,28 @@ typedef struct SkeletalAnimation {
     SkeletalAnimationChannel *channels;  // these are the bones (skeleton) for an animation.. TODO: Channels should be replaced with a HashMap<channelName, channel> for 0(1) lookup.. must find c lib for such
 } SkeletalAnimation;
 
-R3DDEF void LoadSkeletalAnimations()
+typedef struct Skeleton {
+    unsigned int bonesCount;
+    SkeletalBone *bones;
+} Skeleton;
+
+typedef struct AnimatedModel {
+    Model model;
+    Skeleton skeleton;
+    SkeletalAnimation *animations;
+    unsigned int animationsCount;
+} AnimatedModel;
+
+R3DDEF AnimatedModel LoadAnimatedModel(const char *filename); // Load from file, uses raylib for (LoadModel)
 #endif   
+
+#if defined(R3D_ASSIMP_SUPPORT)
+R3DDEF Model LoadModelAdvanced(const char *filename); // Loads a model from ASSIMP (External Dependency)
+R3DDEF void UnloadModelAdvanced(Model model);         // Unload a model.. currently same as UnloadModel
+#if defined(R3D_SKELETAL_ANIMATION_SUPPORT)
+R3DDEF AnimatedModel LoadAnimatedModelAdvanced(const char *filename); // Load from file
+#endif
+#endif                                                // R3D_ASSIMP_SUPPORT
 
 #endif // R3D_H
 
