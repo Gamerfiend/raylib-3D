@@ -6,7 +6,7 @@ Implemented Features:
 - [x] Model, Material loading through Assimp
 
 Current Implementation Plan:
-- [ ] [Skeletal Animation playback](https://gist.github.com/Gamerfiend/18206474679bf5873925c839d0d6a6d0)
+- [ ] [Skeletal Animation](https://gist.github.com/Gamerfiend/18206474679bf5873925c839d0d6a6d0)
 - [ ] Lightmapping
 - [ ] Shadowmapping
 
