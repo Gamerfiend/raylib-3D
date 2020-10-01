@@ -388,7 +388,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
 
     // Load Materials
     model.materialCount = aiModel->mNumMaterials;
-    model.meshMaterial = (int *)R3D_CALLOC(model.meshCount, sizeof(int));
+    model.meshMaterial = (int *)R3D_CALLOC(aiModel->mNumMeshes, sizeof(int));
     model.materials = (Material *)R3D_CALLOC(model.materialCount, sizeof(Material));
 
     for (int i = 0; i < model.materialCount; i++)
