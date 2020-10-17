@@ -256,16 +256,16 @@ R3DDEF GBuffer LoadGBuffer(int width, int height)
 
 R3DDEF void UnloadGBuffer(GBuffer gbuffer)
 {
-    rlDeleteBuffers(gbuffer.id);
-    rlDeleteTextures(gbuffer.color.id);
-    rlDeleteTextures(gbuffer.normal.id);
-    rlDeleteTextures(gbuffer.position.id);
+    rlUnloadFramebuffer(gbuffer.id);
+    rlUnloadTexture(gbuffer.color.id);
+    rlUnloadTexture(gbuffer.normal.id);
+    rlUnloadTexture(gbuffer.position.id);
 }
 
 R3DDEF void BeginDeferredMode(GBuffer gbuffer)
 {
     rlglDraw();
-    rlEnableRenderTexture(gbuffer.id);
+    rlEnableFramebuffer(gbuffer.id);
     rlClearScreenBuffers();
 
     rlViewport(0, 0, gbuffer.width, gbuffer.height);
@@ -286,7 +286,7 @@ R3DDEF void EndDeferredMode()
     glEnable(GL_BLEND);
     rlglDraw();
 
-    rlDisableRenderTexture();
+    rlDisableFramebuffer();
 
     rlViewport(0, 0, GetScreenWidth(), GetScreenHeight());
 
