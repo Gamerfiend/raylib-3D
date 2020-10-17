@@ -373,6 +373,45 @@ static void setTextureFromAssimpMaterial(const struct aiScene *aiModel, Model *m
     }
 }
 
+static struct aiNode * FindMeshNode(struct aiNode * root, unsigned int mesh)
+{
+  for(unsigned int i = 0; i < root->mNumMeshes; ++i)
+  {
+    if(mesh == root->mMeshes[i])
+    {
+      return root;
+    }
+  }
+  for(unsigned int i = 0; i < root->mNumChildren; ++i)
+  {
+    struct aiNode * child = root->mChildren[i];
+    if(FindMeshNode(child, mesh) != NULL)
+    {
+      return child;
+    }
+  }
+  return NULL;
+}
+
+static Matrix ConvertAIMatrix4x4(struct aiMatrix4x4 mat)
+{
+  Matrix out;
+  out.m0 = mat.a1; out.m4 = mat.a2; out.m8 = mat.a3; out.m12 = mat.a4;
+  out.m1 = mat.b1; out.m5 = mat.b2; out.m9 = mat.b3; out.m13 = mat.b4;
+  out.m2 = mat.c1; out.m6 = mat.c2; out.m10 = mat.c3; out.m14 = mat.c4;
+  out.m3 = mat.d1; out.m7 = mat.d2; out.m11 = mat.d3; out.m15 = mat.d4;
+  return out;
+};
+
+static Vector3 ConvertAIVector3D(struct aiVector3D vert)
+{
+  Vector3 v = {0};
+  v.x = vert.x;
+  v.y = vert.y;
+  v.z = vert.z;
+  return v;
+}
+
 R3DDEF Model LoadModelAdvanced(const char *filename)
 {
     Model model = {0};
@@ -438,6 +477,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
     for (int i = 0; i < model.meshCount; i++)
     {
         struct aiMesh *importMesh = aiModel->mMeshes[i];
+        struct aiNode *parentNode = FindMeshNode(aiModel->mRootNode, i);
 
         model.meshes[i].vertexCount = importMesh->mNumVertices;
         // Assimp stores vertices in Vector3 (XYZ) Raylib stores vertices in float array, where every three is one vertex (XYZ)
@@ -445,9 +485,10 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
         unsigned int vectorCounter = 0;
         for (int j = 0; j < model.meshes[i].vertexCount * 3; j += 3)
         {
-            model.meshes[i].vertices[j] = importMesh->mVertices[vectorCounter].x;
-            model.meshes[i].vertices[j + 1] = importMesh->mVertices[vectorCounter].y;
-            model.meshes[i].vertices[j + 2] = importMesh->mVertices[vectorCounter].z;
+            Vector3 vert = Vector3Transform(ConvertAIVector3D(importMesh->mVertices[vectorCounter]), ConvertAIMatrix4x4(parentNode->mTransformation));
+            model.meshes[i].vertices[j] = vert.x;
+            model.meshes[i].vertices[j + 1] = vert.y;
+            model.meshes[i].vertices[j + 2] = vert.z;
             vectorCounter++;
         }
 
