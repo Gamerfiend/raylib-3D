@@ -14,15 +14,15 @@
 *       or source files without problems. But only ONE file should hold the implementation.
 *
 *   #define R3D_ASSIMP_SUPPORT
-*       Defining this before R3D_IMPLEMENTATION adds support for Model/Material/Animation loading 
-*       via the library assimp. 
+*       Defining this before R3D_IMPLEMENTATION adds support for Model/Material/Animation loading
+*       via the library assimp.
 *       NOTE: assimp is NOT included, is an external dependency that must
 *       first install. By using assimp, you will have to compile project with g++ or a compliant C++
 *       compiler.
 *
 *   #define R3D_SKELETAL_ANIMATION_SUPPORT
 *       Defining this before R3D_IMPLEMENTATION adds support for 3D skeletal animation, following standard
-*       set by GLTF, COLLADE, FBX and more. The implementation follows suit by similar indie engines with 
+*       set by GLTF, COLLADE, FBX and more. The implementation follows suit by similar indie engines with
 *       open source code. Largely follows http://www.ogldev.org/www/tutorial38/tutorial38.html
 *
 *   #define R3D_GLAD
@@ -114,8 +114,8 @@ typedef struct SkeletalBone {
 } SkeletalBone;
 
 typedef struct SkeletalAnimationChannel {
-    char *name;            // name of this bone... NOTE: Could this changed to the id?
-    Transform *transforms; // each transform represents this bone's position, rotation, and scale 
+    char* name;            // name of this bone... NOTE: Could this changed to the id?
+    Transform* transforms; // each transform represents this bone's position, rotation, and scale 
     unsigned int transformsAmount;
 } SkeletalAnimationChannel;
 
@@ -123,29 +123,29 @@ typedef struct SkeletalAnimation {
     float duration;                      // length in ticks
     float ticksPerSecond;                // e.g 100 duration (ticks) at 25 ticks per second would give us a ~4 second animation
     unsigned int channelsAmount;
-    SkeletalAnimationChannel *channels;  // these are the bones (skeleton) for an animation.. TODO: Channels should be replaced with a HashMap<channelName, channel> for 0(1) lookup.. must find c lib for such
+    SkeletalAnimationChannel* channels;  // these are the bones (skeleton) for an animation.. TODO: Channels should be replaced with a HashMap<channelName, channel> for 0(1) lookup.. must find c lib for such
 } SkeletalAnimation;
 
 typedef struct Skeleton {
     unsigned int bonesCount;
-    SkeletalBone *bones;
+    SkeletalBone* bones;
 } Skeleton;
 
 typedef struct AnimatedModel {
     Model model;
     Skeleton skeleton;
-    SkeletalAnimation *animations;
+    SkeletalAnimation* animations;
     unsigned int animationsCount;
 } AnimatedModel;
 
-R3DDEF AnimatedModel LoadAnimatedModel(const char *filename); // Load from file, uses raylib for (LoadModel)
+R3DDEF AnimatedModel LoadAnimatedModel(const char* filename); // Load from file, uses raylib for (LoadModel)
 #endif   
 
 #if defined(R3D_ASSIMP_SUPPORT)
-R3DDEF Model LoadModelAdvanced(const char *filename); // Loads a model from ASSIMP (External Dependency)
+R3DDEF Model LoadModelAdvanced(const char* filename); // Loads a model from ASSIMP (External Dependency)
 R3DDEF void UnloadModelAdvanced(Model model);         // Unload a model.. currently same as UnloadModel
 #if defined(R3D_SKELETAL_ANIMATION_SUPPORT)
-R3DDEF AnimatedModel LoadAnimatedModelAdvanced(const char *filename); // Load from file
+R3DDEF AnimatedModel LoadAnimatedModelAdvanced(const char* filename); // Load from file
 #endif
 #endif                                                // R3D_ASSIMP_SUPPORT
 
@@ -156,7 +156,7 @@ R3DDEF AnimatedModel LoadAnimatedModelAdvanced(const char *filename); // Load fr
 
 #if !defined(R3D_GLAD)
 //#define GLAD_IMPLEMENTATION
-#include "includes/glad.h"
+#include "glad.h"
 #endif
 
 #pragma region GBUFFER
@@ -170,19 +170,19 @@ R3DDEF GBuffer LoadGBuffer(int width, int height)
     gbuffer.color.id = 0;
     gbuffer.color.width = width;
     gbuffer.color.height = height;
-    gbuffer.color.format = UNCOMPRESSED_R8G8B8A8;
+    gbuffer.color.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
     gbuffer.color.mipmaps = 0;
 
     gbuffer.normal.id = 0;
     gbuffer.normal.width = width;
     gbuffer.normal.height = height;
-    gbuffer.normal.format = UNCOMPRESSED_R8G8B8A8;
+    gbuffer.normal.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
     gbuffer.normal.mipmaps = 0;
 
     gbuffer.position.id = 0;
     gbuffer.position.width = width;
     gbuffer.position.height = height;
-    gbuffer.position.format = UNCOMPRESSED_R8G8B8A8;
+    gbuffer.position.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
     gbuffer.position.mipmaps = 0;
 
     glGenFramebuffers(1, &gbuffer.id);
@@ -191,27 +191,27 @@ R3DDEF GBuffer LoadGBuffer(int width, int height)
     glGenTextures(1, &gbuffer.position.id);
     glBindTexture(GL_TEXTURE_2D, gbuffer.position.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_FILTER_NEAREST);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_TEXTURE_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_TEXTURE_FILTER_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gbuffer.position.id, 0);
 
     glGenTextures(1, &gbuffer.normal.id);
     glBindTexture(GL_TEXTURE_2D, gbuffer.normal.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_FILTER_NEAREST);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_TEXTURE_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_TEXTURE_FILTER_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gbuffer.normal.id, 0);
 
     glGenTextures(1, &gbuffer.color.id);
     glBindTexture(GL_TEXTURE_2D, gbuffer.color.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_FILTER_NEAREST);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_TEXTURE_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_TEXTURE_FILTER_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gbuffer.color.id, 0);
 
-    unsigned int buffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+    unsigned int buffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
 
-//TODO: Query for extensions, these must be checked to ensure the user platform supports them.. ES2 may support glDrawBuffersEXT().. WebGL may support through the ANGLE web extensions
+    //TODO: Query for extensions, these must be checked to ensure the user platform supports them.. ES2 may support glDrawBuffersEXT().. WebGL may support through the ANGLE web extensions
 #if defined(GRAPHICS_API_OPENGL_ES2) // use extension where availible
     glDrawBuffersEXT(3, buffers);
 #else //glDrawBuffers only availible on ES 3.0, GL 2, 3, 4
@@ -221,10 +221,10 @@ R3DDEF GBuffer LoadGBuffer(int width, int height)
     glGenTextures(1, &gbuffer.depth.id);
     glBindTexture(GL_TEXTURE_2D, gbuffer.depth.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_WRAP_S, RL_WRAP_CLAMP);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_WRAP_T, RL_WRAP_CLAMP);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_FILTER_NEAREST);
-    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_CLAMP);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_CLAMP);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MIN_FILTER, RL_TEXTURE_FILTER_NEAREST);
+    rlTextureParameters(RL_TEXTURE, RL_TEXTURE_MAG_FILTER, RL_TEXTURE_FILTER_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gbuffer.depth.id, 0);
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -264,7 +264,7 @@ R3DDEF void UnloadGBuffer(GBuffer gbuffer)
 
 R3DDEF void BeginDeferredMode(GBuffer gbuffer)
 {
-    rlglDraw();
+    rlDrawRenderBatchActive();
     rlEnableFramebuffer(gbuffer.id);
     rlClearScreenBuffers();
 
@@ -284,7 +284,7 @@ R3DDEF void BeginDeferredMode(GBuffer gbuffer)
 R3DDEF void EndDeferredMode()
 {
     glEnable(GL_BLEND);
-    rlglDraw();
+    rlDrawRenderBatchActive();
 
     rlDisableFramebuffer();
 
@@ -314,9 +314,10 @@ R3DDEF void SetDeferredModeShaderTexture(Texture texture, int i)
 #include <assimp/postprocess.h>
 #include <assimp/color4.h>
 #include <stdio.h>
-#include "includes/stb_image.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
-static void setTextureFromAssimpMaterial(const struct aiScene *aiModel, Model *model, unsigned int materialIndex, enum aiTextureType textureType, MaterialMapType mapType)
+static void setTextureFromAssimpMaterial(const struct aiScene* aiModel, Model* model, unsigned int materialIndex, enum aiTextureType textureType, MaterialMapIndex mapType)
 {
     char buffer[512] = "unnamed";
     struct aiString path;
@@ -333,34 +334,34 @@ static void setTextureFromAssimpMaterial(const struct aiScene *aiModel, Model *m
     if (aiGetMaterialTexture(aiModel->mMaterials[materialIndex], textureType, textureIndex, &path, NULL, NULL, NULL, NULL, NULL, NULL) == aiReturn_SUCCESS)
     {
         strncpy(buffer, path.data, sizeof(buffer));
-        const char embedded[] = {"*"};
+        const char embedded[] = { "*" };
 
         // Embedded texture
         if (TextIsEqual(TextSubtext(buffer, 0, 1), embedded))
         {
-            const char *cindex = TextSubtext(buffer, 1, TextLength(buffer));
+            const char* cindex = TextSubtext(buffer, 1, TextLength(buffer));
             unsigned int index = atoi(cindex);
-            struct aiTexture *embeddedTexture = aiModel->mTextures[index];
+            struct aiTexture* embeddedTexture = aiModel->mTextures[index];
 
-            unsigned char *imageData = NULL;
+            unsigned char* imageData = NULL;
             int width;
             int height;
-            Image rImage = {0};
+            Image rImage = { 0 };
 
             // Texture is compressed.. (jpg)
             if (embeddedTexture->mHeight == 0)
             {
-                imageData = stbi_load_from_memory((const unsigned char *)embeddedTexture->pcData, embeddedTexture->mWidth, &width, &height, NULL, 4);
+                imageData = stbi_load_from_memory((const unsigned char*)embeddedTexture->pcData, embeddedTexture->mWidth, &width, &height, NULL, 4);
             }
             else
             {
-                imageData = stbi_load_from_memory((const unsigned char *)embeddedTexture->pcData, embeddedTexture->mWidth * embeddedTexture->mHeight, &width, &height, NULL, 4);
+                imageData = stbi_load_from_memory((const unsigned char*)embeddedTexture->pcData, embeddedTexture->mWidth * embeddedTexture->mHeight, &width, &height, NULL, 4);
             }
 
             rImage.data = imageData;
             rImage.width = width;
             rImage.height = height;
-            rImage.format = UNCOMPRESSED_R8G8B8A8;
+            rImage.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
             rImage.mipmaps = 1;
 
             model->materials[materialIndex].maps[mapType].texture = LoadTextureFromImage(rImage);
@@ -373,49 +374,49 @@ static void setTextureFromAssimpMaterial(const struct aiScene *aiModel, Model *m
     }
 }
 
-static struct aiNode * FindMeshNode(struct aiNode * root, unsigned int mesh)
+static struct aiNode* FindMeshNode(struct aiNode* root, unsigned int mesh)
 {
-  for(unsigned int i = 0; i < root->mNumMeshes; ++i)
-  {
-    if(mesh == root->mMeshes[i])
+    for (unsigned int i = 0; i < root->mNumMeshes; ++i)
     {
-      return root;
+        if (mesh == root->mMeshes[i])
+        {
+            return root;
+        }
     }
-  }
-  for(unsigned int i = 0; i < root->mNumChildren; ++i)
-  {
-    struct aiNode * child = root->mChildren[i];
-    if(FindMeshNode(child, mesh) != NULL)
+    for (unsigned int i = 0; i < root->mNumChildren; ++i)
     {
-      return child;
+        struct aiNode* child = root->mChildren[i];
+        if (FindMeshNode(child, mesh) != NULL)
+        {
+            return child;
+        }
     }
-  }
-  return NULL;
+    return NULL;
 }
 
-static Matrix ConvertAIMatrix4x4(struct aiMatrix4x4 mat)
+static Matrix ConvertAIMatrix4x4(aiMatrix4x4 mat)
 {
-  Matrix out;
-  out.m0 = mat.a1; out.m4 = mat.a2; out.m8 = mat.a3; out.m12 = mat.a4;
-  out.m1 = mat.b1; out.m5 = mat.b2; out.m9 = mat.b3; out.m13 = mat.b4;
-  out.m2 = mat.c1; out.m6 = mat.c2; out.m10 = mat.c3; out.m14 = mat.c4;
-  out.m3 = mat.d1; out.m7 = mat.d2; out.m11 = mat.d3; out.m15 = mat.d4;
-  return out;
+    Matrix out;
+    out.m0 = mat.a1; out.m4 = mat.a2; out.m8 = mat.a3; out.m12 = mat.a4;
+    out.m1 = mat.b1; out.m5 = mat.b2; out.m9 = mat.b3; out.m13 = mat.b4;
+    out.m2 = mat.c1; out.m6 = mat.c2; out.m10 = mat.c3; out.m14 = mat.c4;
+    out.m3 = mat.d1; out.m7 = mat.d2; out.m11 = mat.d3; out.m15 = mat.d4;
+    return out;
 };
 
-static Vector3 ConvertAIVector3D(struct aiVector3D vert)
+static Vector3 ConvertAIVector3D(aiVector3D vert)
 {
-  Vector3 v = {0};
-  v.x = vert.x;
-  v.y = vert.y;
-  v.z = vert.z;
-  return v;
+    Vector3 v = { 0 };
+    v.x = vert.x;
+    v.y = vert.y;
+    v.z = vert.z;
+    return v;
 }
 
-R3DDEF Model LoadModelAdvanced(const char *filename)
+R3DDEF Model LoadModelAdvanced(const char* filename)
 {
-    Model model = {0};
-    const struct aiScene *aiModel = aiImportFile(filename, aiProcess_Triangulate);
+    Model model = { 0 };
+    const struct aiScene* aiModel = aiImportFile(filename, aiProcess_Triangulate);
     //TODO Error handling for when a model isn't loaded successfully
     if (!aiModel)
     {
@@ -427,7 +428,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
 
     // Load Materials
     model.materialCount = aiModel->mNumMaterials;
-    model.materials = (Material *)R3D_CALLOC(model.materialCount, sizeof(Material));
+    model.materials = (Material*)R3D_CALLOC(model.materialCount, sizeof(Material));
 
     for (int i = 0; i < model.materialCount; i++)
     {
@@ -436,13 +437,13 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
         // TODO: Support Base Color texture type? It doesn't seem to be used, even in PBR material flows like GLTF
         // unsigned int baseColorAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_BASE_COLOR);
         if (aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_DIFFUSE) > 0) {
-            setTextureFromAssimpMaterial(aiModel, &model, i, aiTextureType_DIFFUSE, MAP_ALBEDO);
+            setTextureFromAssimpMaterial(aiModel, &model, i, aiTextureType_DIFFUSE, MATERIAL_MAP_ALBEDO);
         }
 
         // TODO: Support PBR normals? It doesn't seem to be used, even in PBR material like GLTF
         // unsigned int normalPBRAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_NORMAL_CAMERA);
         if (aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_NORMALS) > 0) {
-            setTextureFromAssimpMaterial(aiModel, &model, i, aiTextureType_NORMALS, MAP_NORMAL);
+            setTextureFromAssimpMaterial(aiModel, &model, i, aiTextureType_NORMALS, MATERIAL_MAP_NORMAL);
         }
 
         // Must support both metalness and specular.. as metal is for PBR.. specular matches diffuse flow
@@ -450,7 +451,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
         // unsigned int metalAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_METALNESS);
         // unsigned int specularAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_SPECULAR);
         if (aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_AMBIENT) > 0) {
-            setTextureFromAssimpMaterial(aiModel, &model, i, aiTextureType_AMBIENT, MAP_METALNESS);
+            setTextureFromAssimpMaterial(aiModel, &model, i, aiTextureType_AMBIENT, MATERIAL_MAP_METALNESS);
         }
 
         // Must support both as the models could use the old flow.. or the current flow
@@ -460,9 +461,9 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
         // Unique texture slots
         // aiTextureType_SHININESS also roughness
         if (aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_SHININESS) > 0) {
-            setTextureFromAssimpMaterial(aiModel, &model, i, aiTextureType_SHININESS, MAP_ROUGHNESS);
+            setTextureFromAssimpMaterial(aiModel, &model, i, aiTextureType_SHININESS, MATERIAL_MAP_ROUGHNESS);
         }
-        
+
         // unsigned int roughnessAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_DIFFUSE_ROUGHNESS);
         // unsigned int emissiveAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_EMISSIVE);
         // unsigned int heightAmount = aiGetMaterialTextureCount(aiModel->mMaterials[i], aiTextureType_HEIGHT);
@@ -473,15 +474,15 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
     //Load Meshes for Model
     model.meshCount = aiModel->mNumMeshes;
     model.meshes = (Mesh*)R3D_CALLOC(model.meshCount, sizeof(Mesh));
-    model.meshMaterial = (int *)R3D_CALLOC(model.meshCount, sizeof(int));
+    model.meshMaterial = (int*)R3D_CALLOC(model.meshCount, sizeof(int));
     for (int i = 0; i < model.meshCount; i++)
     {
-        struct aiMesh *importMesh = aiModel->mMeshes[i];
-        struct aiNode *parentNode = FindMeshNode(aiModel->mRootNode, i);
+        struct aiMesh* importMesh = aiModel->mMeshes[i];
+        struct aiNode* parentNode = FindMeshNode(aiModel->mRootNode, i);
 
         model.meshes[i].vertexCount = importMesh->mNumVertices;
         // Assimp stores vertices in Vector3 (XYZ) Raylib stores vertices in float array, where every three is one vertex (XYZ)
-        model.meshes[i].vertices = (float *)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 3);
+        model.meshes[i].vertices = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 3);
         unsigned int vectorCounter = 0;
         for (int j = 0; j < model.meshes[i].vertexCount * 3; j += 3)
         {
@@ -495,7 +496,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
         // Assimp stores texCoords in Vector3 (XYZ), Raylib uses (UV) float array
         if (importMesh->mTextureCoords[0])
         {
-            model.meshes[i].texcoords = (float *)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
+            model.meshes[i].texcoords = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
             unsigned int texCoord = 0;
             for (int j = 0; j < model.meshes[i].vertexCount * 2; j += 2)
             {
@@ -508,7 +509,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
         // Raylib supports two layers of textureCoords
         if (importMesh->mTextureCoords[1])
         {
-            model.meshes[i].texcoords2 = (float *)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
+            model.meshes[i].texcoords2 = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 2);
             unsigned int texCoord = 0;
             for (int j = 0; j < model.meshes[i].vertexCount * 2; j += 2)
             {
@@ -518,7 +519,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
             }
         }
 
-        model.meshes[i].normals = (float *)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 3);
+        model.meshes[i].normals = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 3);
         unsigned int normalCounter = 0;
         for (int j = 0; j < model.meshes[i].vertexCount * 3; j += 3)
         {
@@ -534,7 +535,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
             indiceTotal += importMesh->mFaces[j].mNumIndices;
         }
 
-        model.meshes[i].indices = (unsigned short *)R3D_MALLOC(sizeof(unsigned short) * indiceTotal);
+        model.meshes[i].indices = (unsigned short*)R3D_MALLOC(sizeof(unsigned short) * indiceTotal);
         unsigned int indexCounter = 0;
         for (unsigned int j = 0; j < importMesh->mNumFaces; j++)
         {
@@ -549,7 +550,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
 
         if (importMesh->mTangents)
         {
-            model.meshes[i].tangents = (float *)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 4);
+            model.meshes[i].tangents = (float*)R3D_MALLOC((sizeof(float) * model.meshes[i].vertexCount) * 4);
             unsigned int tangentCounter = 0;
             for (int j = 0; j < model.meshes[i].vertexCount * 4; j += 4)
             {
@@ -563,7 +564,7 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
 
         if (importMesh->mColors[0])
         {
-            model.meshes[i].colors = (unsigned char *)R3D_MALLOC((sizeof(unsigned char) * model.meshes[i].vertexCount) * 4);
+            model.meshes[i].colors = (unsigned char*)R3D_MALLOC((sizeof(unsigned char) * model.meshes[i].vertexCount) * 4);
             unsigned int colorCounter = 0;
             for (int j = 0; j < model.meshes[i].vertexCount * 4; j += 4)
             {
@@ -581,12 +582,12 @@ R3DDEF Model LoadModelAdvanced(const char *filename)
             model.meshMaterial[i] = importMesh->mMaterialIndex;
         }
 
-        model.meshes[i].vboId = (unsigned int *)R3D_CALLOC(7, sizeof(unsigned int));
+        model.meshes[i].vboId = (unsigned int*)R3D_CALLOC(7, sizeof(unsigned int));
     }
 
     for (int i = 0; i < model.meshCount; i++)
     {
-        rlLoadMesh(&model.meshes[i], false);
+        UploadMesh(&model.meshes[i], false);
     }
 
     aiReleaseImport(aiModel);
